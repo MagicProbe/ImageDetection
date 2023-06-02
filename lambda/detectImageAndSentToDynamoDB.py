@@ -176,6 +176,9 @@ def lambda_handler(event, context):
        key = unquote_plus(record['s3']['object']['key'])
        print("File {0} uploaded to {1} bucket".format(key, bucket))
        img = s3_client.get_object(Bucket=bucket, Key=key)
+
+        
+
        csvcontent = csvfile['Body'].read().decode('utf8').splitlines()
        for line in csvcontent:
            tokens = line.strip().split(",")
