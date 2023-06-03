@@ -166,7 +166,8 @@ detection_result = {}
 
 s3_client = boto3.client('s3')
 dynamodb = boto3.client('dynamodb')
-
+Table_name = 'images'
+S3_baseURL = 'https://minipax-image-bucket-fit5225.s3.amazonaws.com/'
 
 def lambda_handler(event, context):
     # save yolo-config
@@ -180,7 +181,9 @@ def lambda_handler(event, context):
     config_data = config_obj['Body'].read()
     weights_data = weights_obj['Body'].read()
 
-    os.mkdir(lambda_path + "yolo_tiny_configs")
+
+    if not os.path.exists(lambda_path + "yolo_tiny_configs"):
+        os.mkdir(lambda_path + "yolo_tiny_configs")
 
     # Write the configuration and weights to temporary files
     with open(lambda_path + yolo_path + labelsPath, 'wb') as f:
@@ -195,6 +198,7 @@ def lambda_handler(event, context):
     Weights = get_weights(wpath)
 
     result = []
+    # print(event['Records'])
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         key = unquote_plus(record['s3']['object']['key'])
@@ -215,13 +219,27 @@ def lambda_handler(event, context):
 
         if key in detection_result:
             rtn = detection_result[key]
+            # print(json.loads(rtn)['objects'])
+            objs = json.loads(rtn)['objects']
+            for obj in objs:
+                data = {}
+                data['id'] = {'S': str(uuid.uuid4())}
+                data['name'] = {'S': key}
+                data['tags'] = {'S': obj['label']}
+                print(obj['label'])
+                data['S3URL'] = {'S': S3_baseURL + key}
+                response = dynamodb.put_item(TableName=Table_name, Item=data)
+
         else:
             rtn = None
+
+
         result.append(rtn)
 
     os.remove(lambda_path + yolo_path + labelsPath)
     os.remove(lambda_path + yolo_path + cfgpath)
     os.remove(lambda_path + yolo_path + wpath)
+    os.rmdir(lambda_path + "yolo_tiny_configs")
 
     print(result)
 
