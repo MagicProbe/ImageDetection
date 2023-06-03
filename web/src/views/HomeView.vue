@@ -23,9 +23,12 @@ export default {
       const reader = new FileReader()
       reader.readAsDataURL(event.target.files[0])
       reader.onload = () => {
-        imageFile.value.value = reader.result
+        // console.log(reader.result.substring(reader.result.indexOf(',') + 1))
+        imageFile.value.value = reader.result.substring(reader.result.indexOf(',') + 1)
       }
+      // imageFile.value.value = Buffer.from(event.target.files[0]).toString('base64');
       imageFile.value.name = event.target.files[0].name
+      // console.log(imageFile.value.value)
     }
 
     const uploadImage = () => {

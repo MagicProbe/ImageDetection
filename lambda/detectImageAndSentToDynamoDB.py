@@ -9,7 +9,6 @@ import os
 import json
 import threading
 import boto3
-import os
 import sys
 import uuid
 from urllib.parse import unquote_plus
@@ -21,21 +20,22 @@ nmsthres = 0.1
 
 def get_labels(labels_path):
     # load the COCO class labels our YOLO model was trained on
-    lpath = os.path.sep.join([yolo_path, labels_path])
-
+    lpath = os.path.sep.join([lambda_path, yolo_path, labels_path])
     print(yolo_path)
     LABELS = open(lpath).read().strip().split("\n")
+
+    # LABELS = s3_client.get_object(Bucket='minipax-python-packages', Key=yolo_path+labels_path).read().strip().split("\n")
     return LABELS
 
 
 def get_weights(weights_path):
     # derive the paths to the YOLO weights and model configuration
-    weightsPath = os.path.sep.join([yolo_path, weights_path])
+    weightsPath = os.path.sep.join([lambda_path, yolo_path, weights_path])
     return weightsPath
 
 
 def get_config(config_path):
-    configPath = os.path.sep.join([yolo_path, config_path])
+    configPath = os.path.sep.join([lambda_path, yolo_path, config_path])
     return configPath
 
 
@@ -142,93 +142,90 @@ def do_prediction(image, net, LABELS, id):
         detection_result[id] = json_data
 
 
-def worker(event, data_id, image):
-    # 在线程中加载模型
+def worker(event, data_id, image, CFG, Weights, Lables):
+    # load model in thread
     nets = load_model(CFG, Weights)
 
-    # 执行预测
+    # do predict
     do_prediction(image, nets, Lables, data_id)
 
-    # 设置事件，通知主线程子线程已经完成任务
+    # set event
     event.set()
 
 
+yolo_bucket_name = "minipax-python-packages"
 yolo_path = "yolo_tiny_configs/"
-
+lambda_path = "/tmp/"
 ## Yolov3-tiny versrion
 labelsPath = "coco.names"
 cfgpath = "yolov3-tiny.cfg"
 wpath = "yolov3-tiny.weights"
 
-Lables = get_labels(labelsPath)
-CFG = get_config(cfgpath)
-Weights = get_weights(wpath)
 
 detection_result = {}
 
 s3_client = boto3.client('s3')
 dynamodb = boto3.client('dynamodb')
-TABLE_NAME = 'todos'
+
 
 def lambda_handler(event, context):
-   for record in event['Records']:
-       bucket = record['s3']['bucket']['name']
-       key = unquote_plus(record['s3']['object']['key'])
-       print("File {0} uploaded to {1} bucket".format(key, bucket))
-       img = s3_client.get_object(Bucket=bucket, Key=key)
-
-        
-
-       csvcontent = csvfile['Body'].read().decode('utf8').splitlines()
-       for line in csvcontent:
-           tokens = line.strip().split(",")
-           if len(tokens) > 2:
-               data = {}
-               data['id'] = {'S': str(uuid.uuid4())}
-               data['title'] = {'S': tokens[0].strip()}
-               data['desc'] = {'S': tokens[1].strip()}
-               data['done'] = {'S': tokens[2].strip()}
-               response = dynamodb.put_item(TableName=TABLE_NAME, Item=data)
-   return {
-       'statusCode': 200,
-       'body': json.dumps('Records successfully inserted into database...')
-   }
+    # save yolo-config
+    label_obj = s3_client.get_object(Bucket=yolo_bucket_name, Key=yolo_path + labelsPath)
+    config_obj = s3_client.get_object(Bucket=yolo_bucket_name, Key=yolo_path + cfgpath)
+    weights_obj = s3_client.get_object(Bucket=yolo_bucket_name, Key=yolo_path + wpath)
 
 
+    # Load the configuration and weights from S3
+    label_data = label_obj['Body'].read()
+    config_data = config_obj['Body'].read()
+    weights_data = weights_obj['Body'].read()
 
-@app.route('/api/object_detection', methods=['POST'])
-def main():
-    data = request.get_json()
-    # 将JSON字符串转换为Python对象
-    parsed_data = json.loads(data)
+    os.mkdir(lambda_path + "yolo_tiny_configs")
 
-    # 提取image和id字段的值
-    image_data = parsed_data["image"]
-    id_data = parsed_data["id"]
+    # Write the configuration and weights to temporary files
+    with open(lambda_path + yolo_path + labelsPath, 'wb') as f:
+        f.write(label_data)
+    with open(lambda_path + yolo_path + cfgpath, 'wb') as f:
+        f.write(config_data)
+    with open(lambda_path + yolo_path + wpath, 'wb') as f:
+        f.write(weights_data)
 
-    # 从JSON数据中获取图像数据并解码Base64字符串
-    image_data = base64.b64decode(image_data)
+    Lables = get_labels(labelsPath)
+    CFG = get_config(cfgpath)
+    Weights = get_weights(wpath)
 
-    # 将图像数据转换为PIL Image对象
-    imgSave = Image.open(io.BytesIO(image_data))
+    result = []
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        key = unquote_plus(record['s3']['object']['key'])
+        print("File {0} uploaded to {1} bucket".format(key, bucket))
+        image = s3_client.get_object(Bucket=bucket, Key=key)
+        image_data = image['Body'].read()  # base64
+        image_data = base64.b64decode(image_data)
+        imgFile = Image.open(io.BytesIO(image_data))
 
-    # 将图像保存到文件
-    imgSave.save(id_data + '.jpg')
+        npImg = np.array(imgFile)
+        image = npImg.copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    imagefile = id_data + ".jpg"
-    img = cv2.imread(imagefile)
-    os.remove(imagefile)
-    npimg = np.array(img)
-    image = npimg.copy()
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        event = threading.Event()
+        thread = threading.Thread(target=worker, args=(event, key, image, CFG, Weights, Lables,))
+        thread.start()
+        event.wait()
 
-    event = threading.Event()
-    thread = threading.Thread(target=worker, args=(event, id_data, image,))
-    thread.start()
-    event.wait()
+        if key in detection_result:
+            rtn = detection_result[key]
+        else:
+            rtn = None
+        result.append(rtn)
 
-    if id_data in detection_result:
-        rtn = detection_result[id_data]
-    else:
-        rtn = None
-    return rtn
+    os.remove(lambda_path + yolo_path + labelsPath)
+    os.remove(lambda_path + yolo_path + cfgpath)
+    os.remove(lambda_path + yolo_path + wpath)
+
+    print(result)
+
+    return {
+        'statusCode': 200,
+        'body': result
+    }
