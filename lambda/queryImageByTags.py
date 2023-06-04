@@ -14,11 +14,13 @@ def lambda_handler(event, context):
 
 
 
-        response = table.scan(FilterExpression='contains(#tag, :val)',
-                          ExpressionAttributeNames={'#tag': 'tag'},
+        response = table.scan(FilterExpression='contains(#tags, :val)',
+                          ExpressionAttributeNames={'#tags': 'tags'},
                           ExpressionAttributeValues={':val': tag})
 
+
         for item in response['Items']:
+
 
 
     return {
