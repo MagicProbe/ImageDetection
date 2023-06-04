@@ -100,9 +100,11 @@
                             message: 'Login successful.',
                             type: 'success'
                         })
-                  console.log(result)
-                  // this.user = result.user
-                  // this.isLoggedIn = true
+                  const idToken = result.getIdToken().getJwtToken()
+                  localStorage.setItem('idToken', idToken)
+                  this.$router.push({
+                      path: '/'
+                    })
                 },
                 onFailure: err => {
                   if (err.code === 'UserNotConfirmedException') {

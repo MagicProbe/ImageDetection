@@ -5,22 +5,20 @@ dynamodb = boto3.resource('dynamodb')
 
 table_name = 'images'
 
-
 def lambda_handler(event, context):
     table = dynamodb.Table(table_name)
-    for obj in event['tags']:
+    tags = event['tags']
+    for obj in tags:
         tag = obj['tag']
         count = obj['count']
-
-
 
         response = table.scan(FilterExpression='contains(#tags, :val)',
                           ExpressionAttributeNames={'#tags': 'tags'},
                           ExpressionAttributeValues={':val': tag})
 
-
+        ans = []
         for item in response['Items']:
-
+            ans.append()
 
 
     return {

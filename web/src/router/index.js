@@ -26,7 +26,8 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: HomeView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/about',
@@ -41,6 +42,24 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
+})
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+  // 判断是否需要验证登录状态
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    const idToken = localStorage.getItem('idToken')
+    if (!idToken) {
+      // 如果没有token，则重定向到登录页
+      next({ name: 'login' })
+    } else {
+      // 如果有token，则允许通过
+      next()
+    }
+  } else {
+    // 不需要验证登录状态的页面直接放行
+    next()
+  }
 })
 
 export default router
