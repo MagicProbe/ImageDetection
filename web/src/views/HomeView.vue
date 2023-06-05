@@ -6,7 +6,13 @@
         <el-button type="success" @click="uploadImageSync = true">Upload Image</el-button>
       </el-aside>
       <el-aside width="auto" class="centered" style="margin-left: 14px;">
-        <el-button type="primary" @click="queryImages">Refresh</el-button>
+        <el-button type="primary" @click="queryImages">Query All</el-button>
+      </el-aside>
+      <el-aside width="auto" class="centered" style="margin-left: 14px;">
+        <el-button type="primary" @click="queryImagesByTagsSync = true">Query By Tags</el-button>
+      </el-aside>
+      <el-aside width="auto" class="centered" style="margin-left: 14px;">
+        <el-button type="primary" @click="queryImagesByImageSync = true">Query By Image</el-button>
       </el-aside>
       <el-main></el-main>
       <el-aside width="auto" class="centered">
@@ -33,8 +39,56 @@
     </el-table>
   </el-main>
 
-  
+  <!-- queryImagesByTags -->
+  <el-dialog :title="title" v-model="queryImagesByTagsSync" width="50%" :append-to-body="true" >
+    <el-form :model="queryForm" label-width="120px">
+      <el-form-item v-for="(tag, index) in queryForm.tags" :key="index" :label="'Tag ' + (index + 1)">
+        <el-row>
+          <el-col :span="12">
+            <el-input v-model="tag.name" placeholder="Tag name"></el-input>
+          </el-col>
+          <el-col :span="12">
+            <el-input-number v-model.number="tag.count" min="1" placeholder="Count"></el-input-number>
+          </el-col>
+          <el-col :span="2">
+            <el-button type="danger" size="small" @click="removeQueryTag(index)">Remove</el-button>
+          </el-col>
+        </el-row>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="addQueryTag">Add tag</el-button>
+      </el-form-item>
+    </el-form>
+    <el-row style="margin-top: 20px;">
+      <el-col :span="11">
+        <el-button type="info" @click="queryImagesByTagsSync = false">Cancel</el-button>
+      </el-col>
+      <el-col :span="2"></el-col>
+      <el-col :span="11">
+        <el-button type="success" @click="queryImagesByTags">Query</el-button>
+      </el-col>
+    </el-row>
+  </el-dialog>
 
+  <!-- queryImagesByImage -->
+  <el-dialog :title="title" v-model="queryImagesByImageSync" width="50%" :append-to-body="true" >
+    <div>
+      <input type="file" ref="fileInput" @change="selectImage" accept=".jpeg,.png, .gif,.bmp,.jpg">
+      <img v-if="imageUrl" :src="imageUrl" width="200px">
+    </div>
+    <el-row style="margin-top: 20px;">
+      <el-col :span="11">
+        <el-button type="info" @click="queryImagesByImageSync = false">Cancel</el-button>
+      </el-col>
+      <el-col :span="2"></el-col>
+      <el-col :span="11">
+        <el-button type="success" @click="queryImagesByImage">Query</el-button>
+      </el-col>
+    </el-row>
+  </el-dialog>
+
+  
+  <!-- adjustTags -->
   <el-dialog :title="title" v-model="adjustTagsSync" width="50%" :append-to-body="true" >
     <el-form :model="form" label-width="120px">
       <el-form-item label="Type">
@@ -71,7 +125,7 @@
     </el-row>
   </el-dialog>
 
-  
+  <!-- uploadImage -->
   <el-dialog :title="title" v-model="uploadImageSync" width="50%" :append-to-body="true" >
     <div>
       <input type="file" ref="fileInput" @change="selectImage" accept=".jpeg,.png, .gif,.bmp,.jpg">
@@ -98,14 +152,20 @@ import axios from 'axios'
 const router = useRouter()
 
 const imageFile = ref({ name: null, value: null })
+const queryForm = ref({
+  url: '',
+  tags: [{ name: '', count: 1 }]
+})
 const form = ref({
-  allTags: [],
+  // allTags: [],
   url: '',
   type: 1,
   tags: [{ name: '', count: 1 }]
 })
 const imageForm = ref([])
 const title = ref('')
+const queryImagesByTagsSync = ref(false)
+const queryImagesByImageSync = ref(false)
 const uploadImageSync = ref(false)
 const adjustTagsSync = ref(false)
 
@@ -130,6 +190,14 @@ const queryImages = () => {
   }).catch(error => {
     console.error(error)
   })
+}
+
+const queryImagesByTags = () => {
+
+}
+
+const queryImagesByImage = () => {
+  
 }
 
 const deleteImage = (row) => {
@@ -158,7 +226,7 @@ const deleteImage = (row) => {
 
 const adjustTags = (row) => {
   form.value.url = row.S3URL
-  form.value.allTags = row.tags
+  // form.value.allTags = row.tags
   form.value.type = 1,
   form.value.tags = [{ name: '', count: 1 }]
   adjustTagsSync.value = true
@@ -200,6 +268,13 @@ const uploadImage = () => {
   uploadImageSync.value = false
 }
 
+const removeQueryTag = (index) => {
+  queryForm.value.tags.splice(index, 1)
+}
+
+const addQueryTag = () => {
+  queryForm.value.tags.push({ name: '', count: 1 })
+}
     const addTag = () => {
       form.value.tags.push({ name: '', count: 1 })
     }
