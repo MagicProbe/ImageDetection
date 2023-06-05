@@ -226,7 +226,31 @@ const queryImagesByTags = () => {
 }
 
 const queryImagesByImage = () => {
-  
+  const formData = new FormData()
+  formData.append('name', imageFile.value.name)
+  formData.append('value', imageFile.value.value)
+  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query/byimage', formData, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('idToken')
+    }
+  }).then(response => {
+    console.log(response)
+    imageForm.value = response.data.body
+      ElMessage({
+        message: 'Query successful.',
+        type: 'success',
+      })
+      
+  }).catch(error => {
+    console.error(error)
+    ElMessage.error(error)
+    ElMessage({
+        message: 'Query failed.',
+        type: 'warning',
+      })
+  })
+  queryImagesByImageSync.value = false
 }
 
 const deleteImage = (row) => {
