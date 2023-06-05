@@ -5,6 +5,9 @@
       <el-aside width="auto" class="centered">
         <el-button type="success" @click="uploadImageSync = true">Upload Image</el-button>
       </el-aside>
+      <el-aside width="auto" class="centered" style="margin-left: 14px;">
+        <el-button type="primary" @click="queryImages">Refresh</el-button>
+      </el-aside>
       <el-main></el-main>
       <el-aside width="auto" class="centered">
         <el-button type="danger" @click="logout">Logout</el-button>
@@ -219,8 +222,8 @@ const uploadImage = () => {
       // }
       const formData = new FormData()
       formData.append('url', form.value.url)
-      formData.append('type', form.value.type)
-      formData.append('tags', form.value.tags)
+      formData.append('type', parseInt(form.value.type))
+      formData.append('tags', JSON.stringify(form.value.tags))
       axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/updatetags', formData, {
         headers: {
           'Content-Type': 'application/json',
