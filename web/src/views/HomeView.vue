@@ -114,7 +114,7 @@ onBeforeMount(() => {
 })
 
 const queryImages = () => {
-  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query', {
+  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query', null, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': localStorage.getItem('idToken')
