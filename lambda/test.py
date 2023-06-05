@@ -1,4 +1,6 @@
 import os
+import json
 
-with open(os.getcwd() + '\\abc.abc', 'wb') as f:
-    f.write("123")
+test = {}
+test['abc'] = 1
+print(next(iter(test.values())))

@@ -1,46 +1,79 @@
 import json
 import boto3
 import uuid
+from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource('dynamodb')
-
 table_name = 'images'
+table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):
-
     url = event['url']
+    name = url[url.index('image/'):]
     type = event['type']
     tags = event['tags']
+    tags = json.loads(tags)
 
+    print(tags)
 
-
-    if type == 1:  # 添加标签
+    if type == '1':  # 添加标签
         for tag in tags:
-            tag_name = tag['tag']
-            tag_count = tag.get('count', 1)
-            for i in range(tag_count):
-                data = {}
-                data['id'] = {'S': str(uuid.uuid4())}
-                data['name'] = {'S': url[url.index('image/'):]}
-                data['tags'] = {'S': tag_name}
-                data['S3URL'] = {'S': url}
-                response = dynamodb.put_item(TableName=table_name, Item=data)
-    elif type == 0:  # 删除标签
-        for tag in tags:
-            tag_name = tag['tag']
+            tag_name = tag['name']
             tag_count = tag.get('count', 1)
 
-            table = dynamodb.Table(table_name)
-            response = table.scan(FilterExpression='contains(#tags, :val)',
-                                  ExpressionAttributeNames={'#tags': 'tags'},
-                                  ExpressionAttributeValues={':val': tag_name})
+            response = table.query(
+                IndexName='name-tag-index',
+                KeyConditionExpression=Key('name').eq(name) & Key('tag').eq(tag_name)
+            )
 
-            with table.batch_writer() as batch:
-                for i in range(min(tag_count, len(response['Items']))):
-                    batch.delete_item(Key={'id': response['Items'][i]['id']})
+            if len(response['Items']) > 0:
+                item = response['Items'][0]
+                table.update_item(
+                    Key={'id': item['id']},
+                    UpdateExpression="set #count=#count + :val",
+                    ExpressionAttributeNames={'#count': 'count'},
+                    ExpressionAttributeValues={
+                        ':val': int(tag_count)
+                    }
+                )
+            else:
+                data = {
+                    'id': str(uuid.uuid4()),
+                    'name': name,
+                    'S3URL': url,
+                    'tag': tag_name,
+                    'count': tag_count
+                }
+                response = table.put_item(Item=data)
 
+    elif type == '0':  # 删除标签
+        for tag in tags:
+            tag_name = tag['name']
+            tag_count = tag.get('count', 1)
+
+            response = table.query(
+                IndexName='name-tag-index',
+                KeyConditionExpression=Key('name').eq(name) & Key('tag').eq(tag_name)
+            )
+
+            if len(response['Items']) > 0:
+                item = response['Items'][0]
+
+                if item['count'] < tag_count:
+                    table.delete_item(
+                        Key={'id': item['id']}
+                    )
+                else:
+                    table.update_item(
+                        Key={'id': item['id']},
+                        UpdateExpression="set #count=#count - :val",
+                        ExpressionAttributeNames={'#count': 'count'},
+                        ExpressionAttributeValues={
+                            ':val': int(tag_count)
+                        }
+                    )
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('update successful!')
     }

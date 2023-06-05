@@ -161,13 +161,14 @@ labelsPath = "coco.names"
 cfgpath = "yolov3-tiny.cfg"
 wpath = "yolov3-tiny.weights"
 
-
 detection_result = {}
 
 s3_client = boto3.client('s3')
-dynamodb = boto3.client('dynamodb')
-Table_name = 'images'
+dynamodb = boto3.resource('dynamodb')
+table_name = 'images'
+table = dynamodb.Table(table_name)
 S3_baseURL = 'https://minipax-image-bucket-fit5225.s3.amazonaws.com/'
+
 
 def lambda_handler(event, context):
     # save yolo-config
@@ -175,12 +176,10 @@ def lambda_handler(event, context):
     config_obj = s3_client.get_object(Bucket=yolo_bucket_name, Key=yolo_path + cfgpath)
     weights_obj = s3_client.get_object(Bucket=yolo_bucket_name, Key=yolo_path + wpath)
 
-
     # Load the configuration and weights from S3
     label_data = label_obj['Body'].read()
     config_data = config_obj['Body'].read()
     weights_data = weights_obj['Body'].read()
-
 
     if not os.path.exists(lambda_path + "yolo_tiny_configs"):
         os.mkdir(lambda_path + "yolo_tiny_configs")
@@ -219,20 +218,27 @@ def lambda_handler(event, context):
 
         if key in detection_result:
             rtn = detection_result[key]
-            # print(json.loads(rtn)['objects'])
             objs = json.loads(rtn)['objects']
+
+            tags = {}
             for obj in objs:
-                data = {}
-                data['id'] = {'S': str(uuid.uuid4())}
-                data['name'] = {'S': key}
-                data['tags'] = {'S': obj['label']}
-                print(obj['label'])
-                data['S3URL'] = {'S': S3_baseURL + key}
-                response = dynamodb.put_item(TableName=Table_name, Item=data)
+                if obj['label'] in tags:
+                    tags[obj['label']] += 1
+                else:
+                    tags[obj['label']] = 1
+
+            for tag_name, tag_count in tags.items():
+                data = {
+                    'id': str(uuid.uuid4()),
+                    'name': key,
+                    'S3URL': S3_baseURL + key,
+                    'tag': tag_name,
+                    'count': tag_count
+                }
+                response = table.put_item(Item=data)
 
         else:
             rtn = None
-
 
         result.append(rtn)
 
