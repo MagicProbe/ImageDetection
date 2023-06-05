@@ -61,11 +61,11 @@
     </el-form>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
-        <el-button type="info" @click="queryImagesByTagsSync = false">Cancel</el-button>
+        <el-button type="info" @click="queryImagesByTagsSync = false" style="width: 100%">Cancel</el-button>
       </el-col>
       <el-col :span="2"></el-col>
       <el-col :span="11">
-        <el-button type="success" @click="queryImagesByTags">Query</el-button>
+        <el-button type="success" @click="queryImagesByTags" style="width: 100%">Query</el-button>
       </el-col>
     </el-row>
   </el-dialog>
@@ -78,11 +78,11 @@
     </div>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
-        <el-button type="info" @click="queryImagesByImageSync = false">Cancel</el-button>
+        <el-button type="info" @click="queryImagesByImageSync = false" style="width: 100%">Cancel</el-button>
       </el-col>
       <el-col :span="2"></el-col>
       <el-col :span="11">
-        <el-button type="success" @click="queryImagesByImage">Query</el-button>
+        <el-button type="success" @click="queryImagesByImage" style="width: 100%">Query</el-button>
       </el-col>
     </el-row>
   </el-dialog>
@@ -116,11 +116,11 @@
     </el-form>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
-        <el-button type="info" @click="adjustTagsSync = false">Cancel</el-button>
+        <el-button type="info" @click="adjustTagsSync = false"  style="width: 100%">Cancel</el-button>
       </el-col>
       <el-col :span="2"></el-col>
       <el-col :span="11">
-        <el-button type="primary" @click="submitData">Submit</el-button>
+        <el-button type="primary" @click="submitData"  style="width: 100%">Submit</el-button>
       </el-col>
     </el-row>
   </el-dialog>
@@ -133,11 +133,11 @@
     </div>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
-        <el-button type="info" @click="uploadImageSync = false">Cancel</el-button>
+        <el-button type="info" @click="uploadImageSync = false" style="width: 100%">Cancel</el-button>
       </el-col>
       <el-col :span="2"></el-col>
       <el-col :span="11">
-        <el-button type="success" @click="uploadImage" :disabled="!imageSelected">Upload image</el-button>
+        <el-button type="success" @click="uploadImage" :disabled="!imageSelected" style="width: 100%">Upload image</el-button>
       </el-col>
     </el-row>
   </el-dialog>
@@ -153,7 +153,6 @@ const router = useRouter()
 
 const imageFile = ref({ name: null, value: null })
 const queryForm = ref({
-  url: '',
   tags: [{ name: '', count: 1 }]
 })
 const form = ref({
@@ -174,7 +173,7 @@ onBeforeMount(() => {
 })
 
 const queryImages = () => {
-  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query', null, {
+  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query/all', null, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': localStorage.getItem('idToken')
@@ -186,14 +185,44 @@ const queryImages = () => {
     // }
     imageForm.value = response.data.body
     console.log(imageForm.value)
+    ElMessage({
+        message: 'Query successful.',
+        type: 'success',
+      })
     // response.data.body
   }).catch(error => {
     console.error(error)
+    ElMessage({
+        message: 'Query failed.',
+        type: 'warning',
+      })
   })
 }
 
 const queryImagesByTags = () => {
-
+  const formData = new FormData()
+  formData.append('tags', JSON.stringify(queryForm.value.tags))
+  axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query/bytags', formData, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('idToken')
+    }
+  }).then(response => {
+    console.log(response)
+    imageForm.value = response.data.body
+    console.log(imageForm.value)
+    ElMessage({
+        message: 'Query successful.',
+        type: 'success',
+      })
+  }).catch(error => {
+    console.error(error)
+    ElMessage({
+        message: 'Query failed.',
+        type: 'warning',
+      })
+  })
+  queryImagesByTagsSync.value = false
 }
 
 const queryImagesByImage = () => {
