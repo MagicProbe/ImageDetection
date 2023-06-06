@@ -48,6 +48,7 @@
     UserPoolId: 'us-east-1_gDIoH9hFt',
     ClientId: '5qe26bvhvj2i5vrl83er54q6ks'
   }
+  
   const userPool = new CognitoUserPool(poolData)
   
   export default {
