@@ -91,6 +91,7 @@
                 Username: this.loginForm.email,
                 Pool: userPool
             }
+            
             const cognitoUser = new CognitoUser(userData)
 
             // 进行登录验证
