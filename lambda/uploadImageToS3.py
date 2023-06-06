@@ -3,10 +3,17 @@ import json
 
 s3 = boto3.client('s3')
 
+
 def lambda_handler(event, context):
+    body = json.loads(event['body'])
+    image_name = body['name']
+    image_value = body['value']
+
+    username = event['requestContext']['authorizer']['claims']['cognito:username']
+
     bucket_name = 'minipax-image-bucket-fit5225'
-    object_key = 'image/'+ event['name']
-    object_data = event['value']
+    object_key = username + '/image/' + image_name
+    object_data = image_value
 
     # Check if the object already exists
     try:
@@ -27,5 +34,8 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
         'body': 'upload image successful'
     }

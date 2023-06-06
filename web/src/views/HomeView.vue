@@ -179,11 +179,11 @@ const queryImages = () => {
       'Authorization': localStorage.getItem('idToken')
     }
   }).then(response => {
-    console.log(response.data.body)
+    // console.log(response.data)
     // for (const key in response.data.body) {
     //   console.log(`Key: ${key}, Value: ${response.data.body[key]}`)
     // }
-    imageForm.value = response.data.body
+    imageForm.value = response.data
     console.log(imageForm.value)
     ElMessage({
         message: 'Query successful.',
@@ -209,7 +209,7 @@ const queryImagesByTags = () => {
     }
   }).then(response => {
     console.log(response)
-    imageForm.value = response.data.body
+    imageForm.value = response.data
     console.log(imageForm.value)
     ElMessage({
         message: 'Query successful.',
@@ -236,7 +236,7 @@ const queryImagesByImage = () => {
     }
   }).then(response => {
     console.log(response)
-    imageForm.value = response.data.body
+    imageForm.value = response.data
       ElMessage({
         message: 'Query successful.',
         type: 'success',

@@ -7,14 +7,25 @@ dynamodb = boto3.resource('dynamodb')
 table_name = 'images'
 table = dynamodb.Table(table_name)
 
+
 def lambda_handler(event, context):
-    url = event['url']
-    name = url[url.index('image/'):]
-    type = event['type']
-    tags = event['tags']
+    body = json.loads(event['body'])
+    url = body['url']
+    type = body['type']
+    tags = body['tags']
+
+    username = event['requestContext']['authorizer']['claims']['cognito:username']
+
     tags = json.loads(tags)
 
-    print(tags)
+    # print(tags)
+
+    param_username = url.replace("https://minipax-image-bucket-fit5225.s3.amazonaws.com/", "").split("/")[0]
+    if username != param_username:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Unauthorized!')
+        }
 
     if type == '1':  # 添加标签
         for tag in tags:
@@ -22,8 +33,8 @@ def lambda_handler(event, context):
             tag_count = tag.get('count', 1)
 
             response = table.query(
-                IndexName='name-tag-index',
-                KeyConditionExpression=Key('name').eq(name) & Key('tag').eq(tag_name)
+                IndexName='S3URL-tag-index',
+                KeyConditionExpression=Key('S3URL').eq(url) & Key('tag').eq(tag_name)
             )
 
             if len(response['Items']) > 0:
@@ -39,9 +50,9 @@ def lambda_handler(event, context):
             else:
                 data = {
                     'id': str(uuid.uuid4()),
-                    'name': name,
                     'S3URL': url,
                     'tag': tag_name,
+                    'username': username,
                     'count': tag_count
                 }
                 response = table.put_item(Item=data)
@@ -52,8 +63,8 @@ def lambda_handler(event, context):
             tag_count = tag.get('count', 1)
 
             response = table.query(
-                IndexName='name-tag-index',
-                KeyConditionExpression=Key('name').eq(name) & Key('tag').eq(tag_name)
+                IndexName='S3URL-tag-index',
+                KeyConditionExpression=Key('S3URL').eq(url) & Key('tag').eq(tag_name)
             )
 
             if len(response['Items']) > 0:
@@ -75,5 +86,8 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
         'body': json.dumps('update successful!')
     }

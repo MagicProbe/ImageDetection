@@ -14,9 +14,9 @@
           <el-form-item label="Password" prop="password">
             <el-input type="password" v-model="loginForm.password" placeholder="Please enter your password"></el-input>
           </el-form-item>
-          <el-form-item>
+          <!-- <el-form-item>
             <router-link to="/forgotpassword">Forgot your password?</router-link>
-          </el-form-item>
+          </el-form-item> -->
 
           <el-row>
             <el-col :span="11">
@@ -43,7 +43,7 @@
   <script>
   import { CognitoUserPool, AuthenticationDetails, CognitoUser } from 'amazon-cognito-identity-js'
   
-  // 配置 AWS Cognito 身份池
+  // AWS Cognito userpool
   const poolData = {
     UserPoolId: 'us-east-1_gDIoH9hFt',
     ClientId: '5qe26bvhvj2i5vrl83er54q6ks'
@@ -73,9 +73,9 @@
       }
     },
     methods: {
-      toRegister() {
-        this.$router.push('/register')
-      },
+    toRegister() {
+      this.$router.push('/register')
+    },
     login() {
         this.$refs.loginForm.validate(valid => {
             if (valid) {

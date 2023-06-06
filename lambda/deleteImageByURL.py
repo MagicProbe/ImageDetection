@@ -1,3 +1,4 @@
+import json
 import boto3
 from boto3.dynamodb.conditions import Key
 
@@ -7,17 +8,29 @@ dynamodb = boto3.resource('dynamodb')
 bucket_name = 'minipax-image-bucket-fit5225'
 table_name = 'images'
 table = dynamodb.Table(table_name)
+
+
 def lambda_handler(event, context):
-    url = event['url']
-    name = url[url.index('image/'):]
+    body = json.loads(event['body'])
+    url = body['url']
+    key = url.replace("https://minipax-image-bucket-fit5225.s3.amazonaws.com/", "")
+
+    username = event['requestContext']['authorizer']['claims']['cognito:username']
+
+    param_username = url.replace("https://minipax-image-bucket-fit5225.s3.amazonaws.com/", "").split("/")[0]
+    if username != param_username:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Unauthorized!')
+        }
 
     # Delete the object in S3 with the specified key
-    s3.delete_object(Bucket=bucket_name, Key=url[url.index('image/'):])
+    s3.delete_object(Bucket=bucket_name, Key=key)
 
     # Scan the table to find all items that contain the specified URL
     response = table.query(
-        IndexName='name-tag-index',
-        KeyConditionExpression=Key('name').eq(name)
+        IndexName='S3URL-tag-index',
+        KeyConditionExpression=Key('S3URL').eq(url)
     )
 
     # Delete each item that matches the URL
@@ -27,5 +40,8 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
         'body': 'delete successful'
     }

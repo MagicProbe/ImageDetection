@@ -230,7 +230,8 @@ def lambda_handler(event, context):
             for tag_name, tag_count in tags.items():
                 data = {
                     'id': str(uuid.uuid4()),
-                    'name': key,
+                    'username': key.split('/')[0],
+                    # 'name': key,
                     'S3URL': S3_baseURL + key,
                     'tag': tag_name,
                     'count': tag_count

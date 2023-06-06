@@ -9,7 +9,8 @@ table = dynamodb.Table(table_name)
 
 
 def lambda_handler(event, context):
-    tags = event['tags']
+    body = json.loads(event['body'])
+    tags = body['tags']
     tags = json.loads(tags)
     result = set()
     for tag in tags:
@@ -46,7 +47,10 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': response
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': json.dumps(response)
     }
 
 # 这里我用的是json.loads 传入的 不知道会不会有bug

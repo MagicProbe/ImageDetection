@@ -198,8 +198,9 @@ def lambda_handler(event, context):
 
     result = set()
 
-    key = 'image/'+ event['name']
-    image_data = event['value']  # base64
+    body = json.loads(event['body'])
+    key = body['name']
+    image_data = body['value']
     image_data = base64.b64decode(image_data)
     imgFile = Image.open(io.BytesIO(image_data))
 
@@ -263,7 +264,10 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': response
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': json.dumps(response)
     }
 
 # def lambda_handler(event, context):
