@@ -37,11 +37,10 @@
         </el-col>
         <el-col :span="8"></el-col>
     </el-row>
-  
     </div>
   </template>
-  
   <script>
+  
   import { CognitoUserPool, AuthenticationDetails, CognitoUser } from 'amazon-cognito-identity-js'
   
   // 配置 AWS Cognito 身份池

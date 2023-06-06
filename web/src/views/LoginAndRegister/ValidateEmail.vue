@@ -37,7 +37,7 @@
     <script>
     import { CognitoUserPool, CognitoUser  } from 'amazon-cognito-identity-js'
     
-    // 配置 AWS Cognito 身份池
+     // 配置 AWS Cognito 身份池
     const poolData = {
       UserPoolId: 'us-east-1_gDIoH9hFt',
       ClientId: '5qe26bvhvj2i5vrl83er54q6ks'
