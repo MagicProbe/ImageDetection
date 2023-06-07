@@ -183,7 +183,7 @@ const uploadDisabled = ref('')
 const fileList = ref([])
 const dialogImageUrl = ref('')
 const dialogVisible = ref(false)
-const imageFile = ref({ name: null, value: null })
+const imageFile = ref({ name: '', value: null })
 const queryForm = ref({
   tags: [{ name: '', count: 1 }]
 })
@@ -256,6 +256,13 @@ const queryImagesByTags = () => {
 
 const queryImagesByImage = () => {
   const formData = new FormData()
+  if(imageFile.value.name == ''){
+    ElMessage({
+        message: 'Please select one image.',
+        type: 'warning',
+      })
+      return
+  }
   formData.append('name', imageFile.value.name)
   formData.append('value', imageFile.value.value)
   axios.post('https://y728lwojnb.execute-api.us-east-1.amazonaws.com/prod/image/query/byimage', formData, {
@@ -279,6 +286,7 @@ const queryImagesByImage = () => {
         type: 'warning',
       })
   })
+  handleRemove()
   queryImagesByImageSync.value = false
 }
 
@@ -317,6 +325,7 @@ const handleRemove = () => {
   imageFile.value.value = null
   imageFile.value.name = ''
   uploadDisabled.value=''
+  fileList.value = []
 }
 
 const handlePictureCardPreview = (uploadFile) => {
@@ -340,6 +349,13 @@ const handleSelect = (file) => {
 }
 
 const uploadImage = () => {
+  if(imageFile.value.name == ''){
+    ElMessage({
+        message: 'Please select one image.',
+        type: 'warning',
+      })
+      return
+  }
   const formData = new FormData()
   formData.append('name', imageFile.value.name)
   formData.append('value', imageFile.value.value)
@@ -357,7 +373,7 @@ const uploadImage = () => {
       })
       queryImages()
     } else {
-      ElMessage.error(response.data.body)
+      ElMessage.error("You can not upload the same image")
     }
   }).catch(error => {
     console.error(error)
