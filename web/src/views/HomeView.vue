@@ -72,10 +72,24 @@
 
   <!-- queryImagesByImage -->
   <el-dialog :title="title" v-model="queryImagesByImageSync" width="50%" :append-to-body="true" >
-    <div>
-      <input type="file" ref="fileInput" @change="selectImage" accept=".jpeg,.png, .gif,.bmp,.jpg">
-      <img v-if="imageUrl" :src="imageUrl" width="200px">
-    </div>
+    <el-upload
+      :class="uploadDisabled"
+      v-model:file-list="fileList"
+      list-type="picture-card"
+      :on-preview="handlePictureCardPreview"
+      :on-remove="handleRemove"
+      :on-change="handleSelect"
+      :auto-upload="false"
+    >
+      <template #trigger>
+        <el-button type="primary">select file</el-button>
+      </template>
+      <template #tip>
+        <div class="el-upload__tip text-red">
+          limit 1 file, new file will cover the old file
+        </div>
+      </template>
+    </el-upload>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
         <el-button type="info" @click="queryImagesByImageSync = false" style="width: 100%">Cancel</el-button>
@@ -127,10 +141,24 @@
 
   <!-- uploadImage -->
   <el-dialog :title="title" v-model="uploadImageSync" width="50%" :append-to-body="true" >
-    <div>
-      <input type="file" ref="fileInput" @change="selectImage" accept=".jpeg,.png, .gif,.bmp,.jpg">
-      <img v-if="imageUrl" :src="imageUrl" width="200px">
-    </div>
+    <el-upload
+      :class="uploadDisabled"
+      v-model:file-list="fileList"
+      list-type="picture-card"
+      :on-preview="handlePictureCardPreview"
+      :on-remove="handleRemove"
+      :on-change="handleSelect"
+      :auto-upload="false"
+    >
+      <template #trigger>
+        <el-button type="primary">select file</el-button>
+      </template>
+      <template #tip>
+        <div class="el-upload__tip text-red">
+          limit 1 file, new file will cover the old file
+        </div>
+      </template>
+    </el-upload>
     <el-row style="margin-top: 20px;">
       <el-col :span="11">
         <el-button type="info" @click="uploadImageSync = false" style="width: 100%">Cancel</el-button>
@@ -151,6 +179,10 @@ import axios from 'axios'
 
 const router = useRouter()
 
+const uploadDisabled = ref('')
+const fileList = ref([])
+const dialogImageUrl = ref('')
+const dialogVisible = ref(false)
 const imageFile = ref({ name: null, value: null })
 const queryForm = ref({
   tags: [{ name: '', count: 1 }]
@@ -192,10 +224,7 @@ const queryImages = () => {
     // response.data.body
   }).catch(error => {
     console.error(error)
-    ElMessage({
-        message: 'Query failed.',
-        type: 'warning',
-      })
+    ElMessage.error(error)
   })
 }
 
@@ -279,19 +308,35 @@ const deleteImage = (row) => {
 
 const adjustTags = (row) => {
   form.value.url = row.S3URL
-  // form.value.allTags = row.tags
   form.value.type = 1,
   form.value.tags = [{ name: '', count: 1 }]
   adjustTagsSync.value = true
 }
 
-const selectImage = (event) => {
+const handleRemove = () => {
+  imageFile.value.value = null
+  imageFile.value.name = ''
+  uploadDisabled.value=''
+}
+
+const handlePictureCardPreview = (uploadFile) => {
+  if(uploadFile != null) {
+    dialogImageUrl.value = uploadFile.url
+  }
+  dialogVisible.value = true
+}
+
+const handleSelect = (file) => {
+  // console.log(file)
   const reader = new FileReader()
-  reader.readAsDataURL(event.target.files[0])
+  reader.readAsDataURL(file.raw)
   reader.onload = () => {
     imageFile.value.value = reader.result.substring(reader.result.indexOf(',') + 1)
   }
-  imageFile.value.name = event.target.files[0].name
+  imageFile.value.name = file.name
+  if(imageFile.value.name != '') {
+    uploadDisabled.value='disabled'
+  }
 }
 
 const uploadImage = () => {
@@ -319,6 +364,7 @@ const uploadImage = () => {
     ElMessage.error(error)
   })
   uploadImageSync.value = false
+  handleRemove()
 }
 
 const removeQueryTag = (index) => {
@@ -404,5 +450,12 @@ const addQueryTag = () => {
   justify-content: center;
   align-items: center;
 }
+
+</style>
+
+<style>
+  .disabled .el-upload--picture-card{
+    display: none;
+  }
 </style>
 
