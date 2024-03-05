@@ -1,1 +1,1 @@
-# FIT5225-ImageDetection
+# ImageDetection
